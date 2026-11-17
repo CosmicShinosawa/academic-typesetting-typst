@@ -80,7 +80,7 @@
 #let op(n) = box(width: 0pt, height: 0pt, context {
   let pos = here().position()
   let even = calc.even(counter(page).get().first())
-  let lbl = text(font: MARGIN-NUM-FONT, size: 8.5pt, weight: "regular", fill: black, str(n))
+  let lbl = text(font: MARGIN-NUM-FONT, size: 8.5pt, weight: "regular", stroke: none, tracking: 0em, fill: black, str(n))
   let w = measure(lbl).width
   let pw = P.at("页宽mm") * 1mm
   let lm = P.at("左边距mm") * 1mm
@@ -109,7 +109,7 @@
       if rh == none { return }
       let num = text(font: "Times New Roman", weight: "bold", size: 10pt, counter(page).display(n))
       let even = calc.even(counter(page).get().first())
-      set text(size: NOTE, font: SONG)
+      set text(size: NOTE, font: SONG, stroke: none, tracking: 0em)
       if P.at("页码位置") == "页眉外侧" {   // 偶数页：页码、书名居左；奇数页：章名、页码居右
         if even { align(left, num + h(1.2em) + text(font: SONG, 书名)) }
         else { align(right, text(font: SONG, rh.supplement) + h(1.2em) + num) }
@@ -126,23 +126,23 @@
       if not hs.any(h => h.location().page() == p) { return }
       let ispart = query(heading).any(h => h.level == 1 and h.location().page() == p)
       if ispart { return }
-      align(center, text(size: NOTE, font: SONG, counter(page).display(n)))
+      align(center, text(size: NOTE, font: SONG, stroke: none, tracking: 0em, counter(page).display(n)))
     },
   )
-  set text(font: SONG, size: BODY, lang: "zh", region: "cn", top-edge: 1em, bottom-edge: 0pt,
-    cjk-latin-spacing: auto)
+  set text(font: SONG, size: BODY, stroke: 0.12pt + black, tracking: 0.04em, lang: "zh", region: "cn",
+    top-edge: 1em, bottom-edge: 0pt, cjk-latin-spacing: auto)
   set smartquote(enabled: false)
   set par(justify: true, leading: gap(BODY), spacing: gap(BODY),
     first-line-indent: (amount: 2em, all: true))
   show regex("[\[\]]"): set text(font: "SimSun")          // 方括号：宋体半角
-  show emph: it => text(font: KAI, style: "italic", it.body)
-  show strong: it => text(font: SONGB, weight: "bold", it.body)
+  show emph: it => text(font: KAI, style: "italic", stroke: none, tracking: 0em, it.body)
+  show strong: it => text(font: SONGB, weight: "bold", stroke: none, tracking: 0em, it.body)
 
   // 脚注：正文注号上标；注区注号与注文同为小五、在基线，首行缩两字，续行顶格
   set footnote.entry(separator: line(length: 25%, stroke: 0.4pt), indent: 0em, gap: gap(NOTE),
     clearance: 0.8em)
   show footnote.entry: it => {
-    set text(size: NOTE)
+    set text(size: NOTE, stroke: none, tracking: 0em)
     set par(leading: gap(NOTE), spacing: gap(NOTE), first-line-indent: (amount: 2em, all: true),
       hanging-indent: 0em)
     par(it.note.body)
@@ -150,6 +150,7 @@
 
   // 标题：编用一级标题（另页、大字、大下沉）；一级部分与章同为“章标题”排式
   show heading: set par(first-line-indent: 0em, justify: false)
+  show heading: set text(stroke: none, tracking: 0em)
   show heading: it => {
     if it.level == 1 {
       v(P.at("编首下沉行") * LINE)
@@ -389,7 +390,7 @@
     }
     if source != none {
       v(0.25 * LINE)
-      set text(size: NOTE, font: SONG)
+      set text(size: NOTE, font: SONG, stroke: none, tracking: 0em)
       set par(leading: gap(NOTE), spacing: 0pt, first-line-indent: (amount: 2em, all: true), justify: true)
       [资料来源：#source]
     }
