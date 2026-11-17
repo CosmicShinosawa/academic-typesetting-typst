@@ -8,7 +8,8 @@
 //   2. 编（第一编/第二编/…）作一级标题，另页居中、单独下沉、不排页码；
 //   3. 前置页专用排式：内容简介 / 丛书页 / 丛书书目 / 书名页 / 版权页（函数名 fp-*、fp-title）；
 //   4. 粗宋用华文中宋 STZhongsong（Windows 无 Songti SC Bold）；带圈注号用 MS Mincho（含①—㊿）；
-//   5. 目录条目自绘：页码按目标页实际编号排（前置罗马、正文阿拉伯），点线连接。
+//   5. 目录条目自绘：页码按目标页实际编号排（前置罗马、正文阿拉伯），点线连接；
+//   6. 原书边码（#op(n)）排至外侧页边空白处，插图与图注（#fig(...)）支持黑体图题与宋体资料来源。
 //
 // 每本书要改的地方：
 //   · 版式参数_156×235.json（开本、字号行距、下沉行数）——一般不用改；
@@ -337,4 +338,41 @@
     ..cells.pos(),
     table.hline(stroke: 0.6pt),
   ))
+}
+
+// 原书边码：主稿 [N] 锚点脱离正文流，排至外侧页边空白处（奇数页右外侧、偶数页左外侧），与所在行基线齐平
+#let MARGIN-NUM-FONT = ("Arial", "SimHei")
+#let op(n) = box(width: 0pt, height: 0pt, context {
+  let pos = here().position()
+  let even = calc.even(counter(page).get().first())
+  let lbl = text(font: MARGIN-NUM-FONT, size: 8.5pt, weight: "regular", fill: black, str(n))
+  let w = measure(lbl).width
+  let pw = P.at("页宽mm") * 1mm
+  let lm = P.at("左边距mm") * 1mm
+  let rm = P.at("右边距mm") * 1mm
+  let gap-x = 4.5mm
+  let target-x = if even { lm - gap-x - w } else { pw - rm + gap-x }
+  place(top + left, dx: target-x - pos.x, dy: -0.78em, lbl)
+})
+
+// 插图与图注：图片版心内居中；图题“图 N  标题”用黑体小五号；资料来源用宋体小五号，首行缩进 2 字符、回行顶格
+#let fig(img, num: none, caption: none, source: none, width: 82%) = {
+  v(空(0.5), weak: true)
+  block(width: 100%, breakable: false, {
+    align(center, box(width: width, img))
+    if caption != none {
+      v(0.5 * LINE)
+      let cap = if num != none { [图 #num#h(1em)#caption] } else { caption }
+      set text(size: NOTE, font: HEI)
+      set par(leading: gap(NOTE), spacing: 0pt, first-line-indent: 0em, justify: true)
+      if source == none { align(center, cap) } else { cap }
+    }
+    if source != none {
+      v(0.25 * LINE)
+      set text(size: NOTE, font: SONG)
+      set par(leading: gap(NOTE), spacing: 0pt, first-line-indent: (amount: 2em, all: true), justify: true)
+      [资料来源：#source]
+    }
+  })
+  v(空(0.5), weak: true)
 }

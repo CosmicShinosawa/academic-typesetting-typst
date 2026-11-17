@@ -134,6 +134,7 @@ def quotes(s):
 text = MASTER.read_text(encoding="utf-8")
 text = re.sub(r"\[(\d+|[ivxlcdm]+|[IVXLCDM]+)\]\s*<!--\s*原书此页(略|空白|仅有标题).*?-->", "", text, flags=re.S)
 text = re.sub(r"(<!--\s*PDF页序:\s*\d+;\s*原书页码:\s*无;[^>]*-->\s*)\[(?!X\])([IVXLCDM]+)\]", r"\1", text)
+text = re.sub(r"<!--\s*PDF页序:[^>]*-->\s*\[(\d+|[ivxlcdm]+|[IVXLCDM]+)\]", "\uE000\\1\uE001", text)
 text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
 
 lines_all = text.split("\n")
@@ -188,17 +189,20 @@ def inline(s, in_note=False, marked=False):
         s = mark_quotes(s)
     out = []
     pos = 0
-    pat = re.compile(r"\[\^(\d+)\]|\*\*(.+?)\*\*|(?<![\*A-Za-z0-9])\*(?!\s)(.+?)(?<!\s)\*(?![\*A-Za-z0-9])|<br>")
+    pat = re.compile(r"\uE000([A-Za-z0-9]+)\uE001|\[\^(\d+)\]|\*\*(.+?)\*\*|(?<![\*A-Za-z0-9])\*(?!\s)(.+?)(?<!\s)\*(?![\*A-Za-z0-9])|<br>")
     for m in pat.finditer(s):
         out.append(plain(s[pos:m.start()], in_note))
         if m[1]:
+            if not in_note:
+                out.append('#op("' + m[1] + '");')
+        elif m[2]:
             assert not in_note, "注中有注"
-            used_notes.add(m[1])
-            out.append("#sym.wj;#fn(" + m[1] + ")[" + note_body(notes[m[1]]) + "];")
-        elif m[2] is not None:
-            out.append("#strong[" + inline(m[2], in_note, True) + "];")
+            used_notes.add(m[2])
+            out.append("#sym.wj;#fn(" + m[2] + ")[" + note_body(notes[m[2]]) + "];")
         elif m[3] is not None:
-            out.append("#emph[" + inline(m[3], in_note, True) + "];")
+            out.append("#strong[" + inline(m[3], in_note, True) + "];")
+        elif m[4] is not None:
+            out.append("#emph[" + inline(m[4], in_note, True) + "];")
         else:
             out.append("#linebreak();")
         pos = m.end()
