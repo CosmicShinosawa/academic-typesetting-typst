@@ -373,7 +373,10 @@ for b in blocks:
         continue
     m = re.match(r"^(#+) (.*)$", first)
     if m:
-        lv, title = len(m[1]), m[2].strip()
+        lv, raw_title = len(m[1]), m[2].strip()
+        mop_m = re.search(r"\uE000([A-Za-z0-9]+)\uE001", raw_title)
+        margin_arg = f', margin-page: "{mop_m[1]}"' if mop_m else ""
+        title = re.sub(r"\uE000[A-Za-z0-9]+\uE001", "", raw_title).strip()
         if title in cfg("读者版略去标题", []):
             continue
         if lv == 1:
@@ -429,7 +432,7 @@ for b in blocks:
                 print(f"警告：页眉章名超过18字，请在排版配置“页眉章名”中给短题：{short}")
             if short != title:
                 run = f", running: [{inline(short)}]"
-        out.append(f'#hd({lv}, "{mode}", outlined: {str(outl).lower()}, newpage: {str(brk).lower()}{run})[{inline(title)}]')
+        out.append(f'#hd({lv}, "{mode}", outlined: {str(outl).lower()}, newpage: {str(brk).lower()}{run}{margin_arg})[{inline(title)}]')
         continue
     # 独立图片
     image_text = " ".join(re.sub(r"^>\s?", "", line) for line in b)

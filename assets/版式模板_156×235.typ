@@ -75,6 +75,21 @@
   }
 }
 
+// 原书边码：主稿 [N] 锚点脱离正文流，排至外侧页边空白处（奇数页右外侧、偶数页左外侧），与所在行基线齐平
+#let MARGIN-NUM-FONT = ("Arial", "SimHei")
+#let op(n) = box(width: 0pt, height: 0pt, context {
+  let pos = here().position()
+  let even = calc.even(counter(page).get().first())
+  let lbl = text(font: MARGIN-NUM-FONT, size: 8.5pt, weight: "regular", fill: black, str(n))
+  let w = measure(lbl).width
+  let pw = P.at("页宽mm") * 1mm
+  let lm = P.at("左边距mm") * 1mm
+  let rm = P.at("右边距mm") * 1mm
+  let gap-x = 4.5mm
+  let target-x = if even { lm - gap-x - w } else { pw - rm + gap-x }
+  place(top + left, dx: target-x - pos.x, dy: -0.78em, lbl)
+})
+
 #let book(书名: "", 文档标题: "", 作者: "", 注号字体: "MS Mincho", doc) = {
   circ-font.update(注号字体)
   set document(title: 文档标题, author: 作者)
@@ -150,8 +165,22 @@
         else { (BODY, left, P.at("小标题前空行"), P.at("小标题后空行")) }
       if (it.level == 2 or it.level == 3) and P.at("章首下沉行") > 0 { v(P.at("章首下沉行") * LINE) }
       v(空(above), weak: true)
-      block(above: 0pt, below: 0pt, sticky: true, width: 100%,
-        align(al, text(font: SONGB, weight: "bold", size: size, top-edge: 1em, it.body)))
+      block(above: 0pt, below: 0pt, sticky: true, width: 100%, {
+        align(al, {
+          text(font: SONGB, weight: "bold", size: size, top-edge: 1em, it.body)
+          context {
+            let mop = state("hd-op", none).get()
+            if mop != none { op(mop) }
+          }
+        })
+        context {
+          let msub = state("hd-sub", none).get()
+          if msub != none {
+            v(0.45 * LINE)
+            align(al, text(font: SONG, size: BODY, [——#msub]))
+          }
+        }
+      })
       v(空(below), weak: true)
     }
   }
@@ -176,11 +205,17 @@
   doc
 }
 
-// 标题：## 一级部分、### 章（均另页起排）、#### 节、##### 小标题
-#let hd(lv, mode, outlined: true, newpage: false, running: none, body) = {
+// 标题：## 一级部分、### 章（均另页起排）、#### 节、##### 小标题；支持副标题（sub）与节标题行外侧边码（margin-page，不进目录/书签）
+#let _hd-sub = state("hd-sub", none)
+#let _hd-op = state("hd-op", none)
+#let hd(lv, mode, outlined: true, newpage: false, running: none, sub: none, margin-page: none, body) = {
   if newpage { pagebreak(weak: true) }
+  if sub != none { _hd-sub.update(sub) }
+  if margin-page != none { _hd-op.update(margin-page) }
   heading(level: lv, outlined: outlined, bookmarked: true,
     supplement: if running == none { body } else { running }, body)
+  if sub != none { _hd-sub.update(none) }
+  if margin-page != none { _hd-op.update(none) }
 }
 
 // 编扉页：另起一页（或由调用方已换页），居中大字，单独下沉；作一级标题登记（进目录与书签）
@@ -340,21 +375,6 @@
   ))
 }
 
-// 原书边码：主稿 [N] 锚点脱离正文流，排至外侧页边空白处（奇数页右外侧、偶数页左外侧），与所在行基线齐平
-#let MARGIN-NUM-FONT = ("Arial", "SimHei")
-#let op(n) = box(width: 0pt, height: 0pt, context {
-  let pos = here().position()
-  let even = calc.even(counter(page).get().first())
-  let lbl = text(font: MARGIN-NUM-FONT, size: 8.5pt, weight: "regular", fill: black, str(n))
-  let w = measure(lbl).width
-  let pw = P.at("页宽mm") * 1mm
-  let lm = P.at("左边距mm") * 1mm
-  let rm = P.at("右边距mm") * 1mm
-  let gap-x = 4.5mm
-  let target-x = if even { lm - gap-x - w } else { pw - rm + gap-x }
-  place(top + left, dx: target-x - pos.x, dy: -0.78em, lbl)
-})
-
 // 插图与图注：图片版心内居中；图题“图 N  标题”用黑体小五号；资料来源用宋体小五号，首行缩进 2 字符、回行顶格
 #let fig(img, num: none, caption: none, source: none, width: 82%) = {
   v(空(0.5), weak: true)
@@ -375,4 +395,18 @@
     }
   })
   v(空(0.5), weak: true)
+}
+
+// 章首题辞：位于章标题与正文之间，较正文略缩进、小字号（默认仿宋 9.5pt），出处行以 —— 引导
+#let epigraph(body, source: none, font: FANG) = {
+  block(above: 0.4 * LINE, below: 0.8 * LINE, width: 100%, inset: (left: 2em, right: 1em), {
+    set text(font: font, size: 9.5pt)
+    set par(leading: 1.45em, spacing: 0.35em, first-line-indent: 0em, justify: true)
+    body
+    if source != none {
+      parbreak()
+      set par(first-line-indent: 0em, justify: true)
+      [——#source]
+    }
+  })
 }
